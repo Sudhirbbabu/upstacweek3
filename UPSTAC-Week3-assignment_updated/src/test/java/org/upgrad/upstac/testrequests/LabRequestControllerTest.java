@@ -1,20 +1,24 @@
 package org.upgrad.upstac.testrequests;
 
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.web.server.ResponseStatusException;
+import org.upgrad.upstac.exception.AppException;
 import org.upgrad.upstac.testrequests.lab.CreateLabResult;
 import org.upgrad.upstac.testrequests.lab.LabRequestController;
 import org.upgrad.upstac.testrequests.lab.TestStatus;
+import org.upgrad.upstac.users.User;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 
 @SpringBootTest
@@ -39,16 +43,24 @@ class LabRequestControllerTest {
         TestRequest testRequest = getTestRequestByStatus(RequestStatus.INITIATED);
         //Implement this method
 
-        //Create another object of the TestRequest method and explicitly assign this object for Lab Test using assignForLabTest() method
+        //Create another object of the TestRequest method and explicitly assign this object for Lab Test using assignForLabTest() metho
         // from labRequestController class. Pass the request id of testRequest object.
-
         //Use assertThat() methods to perform the following two comparisons
         //  1. the request ids of both the objects created should be same
         //  2. the status of the second object should be equal to 'INITIATED'
         // make use of assertNotNull() method to make sure that the lab result of second object is not null
         // use getLabResult() method to get the lab result
+        String object1 = " ";
+        Long id = 1L;
+        User loggedUser = new User();
+        loggedUser.result(object1);
 
+        TestRequest expectedResponseTestRequest = new TestRequest();
 
+        when(userLoggedInService.getLoggedInUser()).thenReturn(loggedUser);
+
+        // Force returns the expected Response
+        when(testRequestUpdateService.assignForConsultation(id, loggedUser)).thenReturn(expectedResponseTestRequest);
     }
 
     public TestRequest getTestRequestByStatus(RequestStatus status) {
@@ -70,6 +82,18 @@ class LabRequestControllerTest {
 
         //Use assertThat() method to perform the following comparison
         //  the exception message should be contain the string "Invalid ID"
+        String emailUser = "email-test@domain.com";
+        Long id = 1L;
+        User loggedUser = new User();
+        loggedUser.setEmail(emailUser);
+
+        when(userLoggedInService.getLoggedInUser()).thenReturn(loggedUser);
+
+        // Act
+        this.consultationController.assignForConsultation(id);
+
+        // Assert
+        verify(testRequestUpdateService,times(1)).assignForConsultation(id, loggedUser);
 
     }
 
@@ -89,7 +113,18 @@ class LabRequestControllerTest {
         //  1. the request ids of both the objects created should be same
         //  2. the status of the second object should be equal to 'LAB_TEST_COMPLETED'
         // 3. the results of both the objects created should be same. Make use of getLabResult() method to get the results.
+        String emailUser = "email-test@domain.com";
+        Long id = 1L;
+        User loggedUser = new User();
+        loggedUser.setEmail(emailUser);
 
+        when(userLoggedInService.getLoggedInUser()).thenReturn(loggedUser);
+
+        // Act
+        this.consultationController.assignForConsultation(id);
+
+        // Assert
+        verify(testRequestUpdateService,times(1)).assignForConsultation(id, loggedUser);
 
 
     }
@@ -114,6 +149,32 @@ class LabRequestControllerTest {
         //Use assertThat() method to perform the following comparison
         //  the exception message should be contain the string "Invalid ID"
 
+        Long InvalidRequestId= -34L;
+        String emailUser = "email-test@domain.com";
+
+        User loggedUser = new User();
+        loggedUser.setEmail(emailUser);
+
+        TestRequest expectedResponseTestRequest = new TestRequest();
+        expectedResponseTestRequest.setRequestId(InvalidRequestId);
+        expectedResponseTestRequest.setStatus(RequestStatus.DIAGNOSIS_IN_PROCESS);
+        expectedResponseTestRequest.setEmail(emailUser);
+
+        // Returns my logged user
+        when(userLoggedInService.getLoggedInUser()).thenReturn(loggedUser);
+
+        when(testRequestUpdateService.assignForConsultation(InvalidRequestId, loggedUser))
+                .thenThrow(new AppException("Invalid ID or State"));
+
+        // Act
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            this.consultationController.assignForConsultation(InvalidRequestId);
+        });
+
+        // Assert
+        Assertions.assertThat(exception.getMessage()).contains("Invalid ID");
+
+
     }
 
     @Test
@@ -134,6 +195,31 @@ class LabRequestControllerTest {
 
         //Use assertThat() method to perform the following comparison
         //  the exception message should be contain the string "ConstraintViolationException"
+
+        Long InvalidRequestId= -34L;
+        String emailUser = "email-test@domain.com";
+
+        User loggedUser = new User();
+        loggedUser.setEmail(emailUser);
+
+        TestRequest expectedResponseTestRequest = new TestRequest();
+        expectedResponseTestRequest.setRequestId(InvalidRequestId);
+        expectedResponseTestRequest.setStatus(RequestStatus.DIAGNOSIS_IN_PROCESS);
+        expectedResponseTestRequest.setEmail(emailUser);
+
+        // Returns my logged user
+        when(userLoggedInService.getLoggedInUser()).thenReturn(loggedUser);
+
+        when(testRequestUpdateService.assignForConsultation(InvalidRequestId, loggedUser))
+                .thenThrow(new AppException("Invalid ID or State"));
+
+        // Act
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            this.consultationController.assignForConsultation(InvalidRequestId);
+        });
+
+        // Assert
+        Assertions.assertThat(exception.getMessage()).contains("Invalid ID");
 
     }
 
